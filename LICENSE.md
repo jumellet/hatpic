@@ -1,2 +1,1 @@
-
-Copyright (C) 2024 jumellet
+Copyright (C) 2024 julien mellet
