@@ -9,9 +9,12 @@
 #
 
 from rospy import init_node, loginfo, Publisher, Time, Rate, Subscriber, spin, sleep, wait_for_message, ROSInterruptException
-from geometry_msgs.msg import Twist, Wrench
+from geometry_msgs.msg import Twist, Wrench, WrenchStamped, Transform, PoseStamped
+from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 import os
 import threading
+from scipy.spatial.transform import Rotation
+from time import time
 
 
 if os.name == 'nt':
@@ -66,13 +69,16 @@ index = 0
 scs_goal_position = [SCS_MINIMUM_POSITION_VALUE, SCS_MAXIMUM_POSITION_VALUE]         # Goal position
 
 # Torque control parameters
-KP_TORQUE = 50#-1500.0 # Proportional gain
+KP_TORQUE = 14#-1500.0 # Proportional gain
 KI_TORQUE = 1    # Integral gain
 KI_INTEGRAL = 5#50
 KE = 0.40           # Elastic coefficient
+K_FORCE_FEEDBACK = 80 #100000 # Coefficient force feedback
+KP_MAP_JOYSTICK = 0.00003
+ALPHA_LOW_PASS = 0.05
 
 # Control loop variables
-torque_setpoint = 200.0    # Set your desired torque value
+torque_setpoint = 0.0    # Set your desired torque value
 torque_feedback = 0.0;
 integral_term = 0.0
 INTEGRAL_LIMIT = 2000
@@ -81,6 +87,9 @@ external_wrench = Wrench()
 external_wrench.torque.x = 0
 external_wrench.torque.y = 0
 external_wrench.torque.z = 0
+
+delta_t = 0.02
+tStart = time.time()
 
 # Define a lock to ensure thread safety
 lock = threading.Lock()
@@ -141,34 +150,45 @@ if scs_comm_result != COMM_SUCCESS:
 elif scs_error != 0:
     print("%s" % packetHandler.getRxPacketError(scs_error))
 
-def callback_wrench(data):
-    global external_wrench
-    try:
-      external_wrench.torque.x = data.torque.x
-    except ValueError:
-      pass
-
 # ROS initializations
 init_node('joystick_node', anonymous=True)
 
-pub_joystick_left = Publisher('/joystick_left', Twist, queue_size=1)
-pub_joystick_right = Publisher('/joystick_right', Twist, queue_size=1)
-sub_external_wrench = Subscriber('/external_wrench', Wrench, callback_wrench)
-
-msg_joystick_left = Twist()
-msg_joystick_right = Twist()
+#pub_joystick_left = Publisher('/joystick_left', Twist, queue_size=1)
+#pub_joystick_right = Publisher('/joystick_right', Twist, queue_size=1)
+pub_trajectory = Publisher('/iris/command/trajectory', MultiDOFJointTrajectory, queue_size=1)
 
 
+#msg_joystick_left = Twist()
+#msg_joystick_right = Twist()
+
+
+msg_trajectory = MultiDOFJointTrajectory()
+msg_trajectory_position = Transform()
+msg_trajectory_velocity = Twist()
+msg_trajectory_acceleration = Twist()
+
+def callback_wrench(data):
+    global external_wrench
+    try:
+        external_wrench.torque.x = (1 - ALPHA_LOW_PASS) * (-data.wrench.force.x*K_FORCE_FEEDBACK) + ALPHA_LOW_PASS * external_wrench.torque.x
+
+    except ValueError:
+      pass
+
+def listen_thread():
+    Subscriber('/iris/force_sensor', WrenchStamped, callback_wrench)
 
 def break_thread():
     global auto_iteration_flag
     if getch() == chr(0x1b):
         print("Escape key pressed. Exiting loop. \n", end='')
         auto_iteration_flag = False
+        
 
 def plot_loop():
     global integral_term, torque_setpoint, auto_iteration_flag
-    global msg_joystick_left, msg_joystick_right, external_wrench
+    global msg_trajectory, external_wrench, tStart, delta_t
+    global msg_trajectory_position, msg_trajectory_velocity, msg_trajectory_acceleration
     while auto_iteration_flag:
         # Read SCServo present position and speed
         scs_present_position_speed, scs_comm_result, scs_error = packetHandler.read4ByteTxRx(portHandler, SCS_ID, ADDR_SCS_PRESENT_POSITION)
@@ -216,17 +236,41 @@ def plot_loop():
         print("[ID:%03d] PresSpd:%03d integral:%03d ctlSpd:%03d PresTrq:%03d TrqErr:%03d TrqSpt:%03d extTrq:%03d \n" 
                 % (SCS_ID, SCS_TOHOST(scs_present_speed, 15), integral_term, SCS_TOHOST(speed_control_output, 15), SCS_TOHOST(scs_present_torque, 10), torque_error, torque_setpoint, external_wrench.torque.x), end='\r')
         
-        # Write SCServo speed
-        scs_comm_result, scs_error = packetHandler.write2ByteTxRx(portHandler, SCS_ID, ADDR_SCS_GOAL_SPEED, speed_control_output)
-        if scs_comm_result != COMM_SUCCESS:
-            print("%s" % packetHandler.getTxRxResult(scs_comm_result))
-        elif scs_error != 0:
-            print("%s" % packetHandler.getRxPacketError(scs_error))
+        if (time.time() - tStart) < delta_t:
+            pass
+        else:
+            # Write SCServo speed
+            scs_comm_result, scs_error = packetHandler.write2ByteTxRx(portHandler, SCS_ID, ADDR_SCS_GOAL_SPEED, speed_control_output)
+            if scs_comm_result != COMM_SUCCESS:
+                print("%s" % packetHandler.getTxRxResult(scs_comm_result))
+            elif scs_error != 0:
+                print("%s" % packetHandler.getRxPacketError(scs_error))
+            tStart = time.time()
 
         # Publish ROS topics
-        msg_joystick_left.angular.x = scs_present_position - OFFSET_ORIGIN_POSITION
+        yaw = 0.0
+        rot = Rotation.from_euler('xyz', [0.0, 0.0, yaw], degrees=False)
 
-        pub_joystick_left.publish(msg_joystick_left)
+        msg_trajectory_position.translation.x += (scs_present_position - OFFSET_ORIGIN_POSITION) * KP_MAP_JOYSTICK
+        msg_trajectory_position.translation.y = 0
+        msg_trajectory_position.translation.z = 1
+        msg_trajectory_position.rotation.x = rot.as_quat()[0]
+        msg_trajectory_position.rotation.y = rot.as_quat()[1]
+        msg_trajectory_position.rotation.z = rot.as_quat()[2]
+        msg_trajectory_position.rotation.w = rot.as_quat()[3]
+
+        point = MultiDOFJointTrajectoryPoint([msg_trajectory_position],
+                                             [msg_trajectory_velocity],
+                                             [msg_trajectory_acceleration],
+                                             Time.now())
+        msg_trajectory.points.append(point)
+
+
+        #msg_trajectory.points.velocities.linear.x = scs_present_position - OFFSET_ORIGIN_POSITION
+
+        #angular.x = scs_present_position - OFFSET_ORIGIN_POSITION
+
+        pub_trajectory.publish(msg_trajectory)
 
 
 
@@ -256,14 +300,19 @@ while True:
     # Create new threads
     second_loop_thread = threading.Thread(target=plot_loop)
     third_loop_thread = threading.Thread(target=break_thread)
+    forth_loop_thread = threading.Thread(target=listen_thread)
 
     # Start loop thread
     second_loop_thread.start()
     third_loop_thread.start()
+    forth_loop_thread.start()
+
+    #spin()
 
     # Wait for loop threads to finish
     second_loop_thread.join()
     third_loop_thread.join()
+    forth_loop_thread.join()
 
 
 scs_comm_result, scs_error = packetHandler.write1ByteTxRx(portHandler, SCS_ID, ADDR_SCS_TORQUE_ENABLE, 0)
