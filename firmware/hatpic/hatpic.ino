@@ -3,7 +3,7 @@
   Description: This sketch handles the interface of the smart servo with
   the computer throug serial communication.
 
-  Created by: Julien Mellet, and Simon Le Berre
+  Authors: Julien Mellet, and Simon Le Berre
   Date: May 26, 2024
 
   Additional Notes: This is a basic example to demonstrate digital output.
@@ -62,11 +62,10 @@ void setup() {
   Serial.println(pos_M1);
  
   //Wheel mode for ID1
-  motor.WriteMode(1, 1);
+  //motor.WriteMode(1, 1);
   //motor.WheelMode(1);
-  delay(100);
-  motor.WriteTorqueLimit(1, 1);
-  motor.EnableTorque(1, 0);  // 0 to disconnect the motor     1 to activate torque 
+  //motor.WriteTorqueLimit(1, 1);
+  //motor.EnableTorque(1, 0);  // 0 to disconnect the motor     1 to activate torque 
   
   Serial.println(motor.FeedBack(1));
  

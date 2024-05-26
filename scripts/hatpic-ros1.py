@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """
 File: hatpic-ros1.py
-Author: Julien Mellet, and Simon Le berre
+Authors: Julien Mellet, and Simon Le berre
 Date: 2024-05-26
 Description: A Python script to use the hatpic device to send some commands through ROS1.
 """
+
 __author__ = "Julien Mellet, and Simon Le Berre"
 __copyright__ = "Copyright 2024, Hatpic"
 __credits__ = ["Julien Mellet", "Simon Le Berre"]
