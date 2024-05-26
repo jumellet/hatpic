@@ -5,7 +5,7 @@ Author: Julien Mellet, and Simon Le berre
 Date: 2024-05-26
 Description: A Python script to use the hatpic device to send some commands through ROS1.
 """
-_author__ = "Julien Mellet, and Simon Le Berre"
+__author__ = "Julien Mellet, and Simon Le Berre"
 __copyright__ = "Copyright 2024, Hatpic"
 __credits__ = ["Julien Mellet", "Simon Le Berre"]
 __license__ = "GPL"
@@ -74,14 +74,14 @@ def extraction_value(chaine, debut, fin):
         return -1
 
 def classification(trame):
-    print(trame)
+    #print(trame)
     #global data_a, data_b, data_c, data_d
     if trame != None:
         if trame[0:2] == 'ia':
-            data_a   = int(extraction_value(trame, 'a', 'b'))
+            data_a = int(extraction_value(trame, 'a', 'b'))
             data_b = int(extraction_value(trame, 'b', 'c'))
-            data_c  = int(extraction_value(trame, 'c', 'd'))
-            data_d  = int(extraction_value(trame, 'd', 'o'))
+            data_c = int(extraction_value(trame, 'c', 'd'))
+            data_d = int(extraction_value(trame, 'd', 'o'))
             data_hatpic = [data_a, data_b, data_c, data_d]
             return data_hatpic
 
@@ -90,5 +90,5 @@ while True:
     #value  = write('10')
     #time.sleep(0.)
     data2 = read()
-
-    print(data2)
+    if data2 != None:
+        print(data2)

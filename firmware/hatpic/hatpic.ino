@@ -20,27 +20,26 @@ void setup() {
 
 void loop() {
   if (Serial.available()) {
-      serial_data = Serial.read();
-      if (String(serial_data) == "i"){
-        serial_trame = "i";
-        while (String(serial_data)!= "o") {
-          serial_data = Serial.read();
-          serial_trame = serial_trame + String(serial_data);
-        }
-        check_trame(serial_trame);
+    serial_data = Serial.read();
+    if (String(serial_data) == "i"){
+      serial_trame = "i";
+      while (String(serial_data)!= "o") {
+        serial_data = Serial.read();
+        serial_trame = serial_trame + String(serial_data);
       }
-      else{Serial.flush();}
+      check_trame(serial_trame);
+      send_cmd();
     }
+    else{Serial.flush();}
+  }
 }
 
 void check_trame(String trame){
-  
-  if (trame.substring(0,2) == "ia"){ set_led_color(trame);}
-
+  if (trame.substring(0,2) == "ia"){trame2data(trame);}
   else {Serial.println("error");}
 }
 
-void set_led_color(String trame){
+void trame2data(String trame){
   int aIndex = trame.indexOf('a');
   int bIndex = trame.indexOf('b');
   int cIndex = trame.indexOf('c');
@@ -53,6 +52,9 @@ void set_led_color(String trame){
     data_c = trame.substring(cIndex + 1, dIndex).toInt();
     data_d = trame.substring(dIndex + 1, oIndex).toInt();
   }
+}
+
+void send_cmd(){
   Serial.print("ia");
   Serial.print(String(data_a));
   Serial.print("b");
