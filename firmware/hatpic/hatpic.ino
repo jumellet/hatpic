@@ -30,6 +30,7 @@ const float Ke = 0.50; // Elastic coefficient
 // Control loop variables
 float torqueSetpoint = 0.0; // Set your desired torque value
 float torqueFeedback = 0.0;
+float externalForceFeedback = 0.0; // External force
 float integralTerm = 0.0;
 float integralLimit = 2000.0;  // Adjust as needed
 
@@ -43,6 +44,7 @@ unsigned long loopStartTime = millis();
 char serial_data;
 String serial_trame;
 unsigned long data_a, data_b, data_c, data_d;
+int tmp_data_a, tmp_data_b, tmp_data_c, tmp_data_d;
 
 void setup() {
   Serial.begin(115200);
@@ -103,6 +105,12 @@ void loop() {
   // Calculate spring effect
   torqueSetpoint = Ke * (motor.ReadPos(1)-1000);
 
+  // Adjust torque setpoint based on force sensor feedback
+  torqueSetpoint += tmp_data_a;
+  
+  //Serial.print("torque setpoint: ");
+  //Serial.println(String(torqueSetpoint));
+
   // Calculate speed control output using PI control
   float speedControlOutput = Kp * torqueError + Ki * integralTerm;
   if (speedControlOutput > 20000){
@@ -140,9 +148,13 @@ void trame2data(String trame){
 
   if((aIndex != -1) and (bIndex != -1) and (cIndex != -1) and (dIndex != -1) and (oIndex != -1)) {
     data_a = trame.substring(aIndex + 1, bIndex).toInt();
+    tmp_data_a = data_a - 1000;
     data_b = trame.substring(bIndex + 1, cIndex).toInt();
+    tmp_data_b = data_b - 1000;
     data_c = trame.substring(cIndex + 1, dIndex).toInt();
+    tmp_data_c = data_c - 1000;
     data_d = trame.substring(dIndex + 1, oIndex).toInt();
+    tmp_data_d = data_d - 1000; 
   }
 }
 

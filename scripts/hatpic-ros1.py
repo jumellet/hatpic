@@ -24,7 +24,7 @@ import time
 
 class Hatpic:
     def __init__(self):
-        self.hatpic_ser = serial.Serial(port='/dev/ttyUSB0',  baudrate=115200, timeout=1)
+        self.hatpic_ser = serial.Serial(port='/dev/ttyUSB1',  baudrate=115200, timeout=1)
 
         # Data from the Hatpic device
         self.data_a = 0
@@ -35,6 +35,7 @@ class Hatpic:
         # Coefficient of the joystick
         self.k_j = 0.00033
         self.dead_zone = 22
+        self.f_max = 150
 
         # Robot's variables
         self.state = State()
@@ -109,17 +110,19 @@ class Hatpic:
         data_joy_b = msg.wrench.force.y
         data_joy_c = msg.wrench.force.z
         data_joy_d = msg.wrench.torque.z
-        
-        data_joy_a *= 10
-        data_joy_a += 1000
-        if data_joy_a > 2000:
-            data_joy_a = 2000
-        elif data_joy_a < 0:
-            data_joy_a = 0
 
-        print(data_joy_a)
-        data_joy_a = 1000
-        self.write('ia'+ str(data_joy_a) +'b2000c0d23o')
+        data_joy_a = msg.wrench.force.z
+        
+        data_joy_a *= 100
+        if data_joy_a > self.f_max:
+            data_joy_a = self.f_max
+        elif data_joy_a < -self.f_max:
+            data_joy_a = -self.f_max
+        data_joy_a += 1000
+
+        print("d: ", str(int(data_joy_a)))
+        #data_joy_a = 1100
+        self.write('ia'+ str(int(data_joy_a)) +'b2000c0d23o')
         #try:
         #    self.lin_vel_B = np.array([msg.twist.twist.linear.x,
         #                               msg.twist.twist.linear.y,
@@ -143,7 +146,7 @@ class Hatpic:
             x = self.joystick_processing(datas[0])
             self.pose_stamped.pose.position.x += x
             self.pose_stamped.pose.position.y = 0
-            self.pose_stamped.pose.position.z = 1
+            self.pose_stamped.pose.position.z = 3
 
             self.pose_stamped.pose.orientation.x = 0
             self.pose_stamped.pose.orientation.y = 0
@@ -151,7 +154,7 @@ class Hatpic:
             self.pose_stamped.pose.orientation.w = 1
 
             self.cmd_robot_pub.publish(self.pose_stamped)
-            #print(x)
+            #print("x: ", x)
 
 if __name__ == '__main__':
     try:
