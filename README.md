@@ -4,12 +4,6 @@
 
 The Hatpic device is an open source 1 Degree of Freedom (DoF) haptic joystick.
 
-# Installs
-
-## Feetech SDK
-
-## ROS Neotic
-
 # How to use
 
 Ensure motor ID set to 1.
