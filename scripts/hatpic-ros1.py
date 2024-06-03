@@ -6,24 +6,15 @@ Date: 2024-05-26
 Description: A Python script to use the hatpic device to send some commands through ROS1.
 """
 
-__author__ = "Julien Mellet, and Simon Le Berre"
-__copyright__ = "Copyright 2024, Hatpic"
-__credits__ = ["Julien Mellet", "Simon Le Berre"]
-__license__ = "GPL"
-__maintainer__ = "Julien Mellet"
-__email__ = "julien.mellet@unina.it"
-__status__ = "Production"
-
 import rospy
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import WrenchStamped, PoseStamped, Point
+from geometry_msgs.msg import WrenchStamped, PoseStamped
 from mavros_msgs.msg import PositionTarget, AttitudeTarget, State
-import numpy as np
 import serial
 import time
 
 class Hatpic:
     def __init__(self):
+        # Check address of the port
         self.hatpic_ser = serial.Serial(port='/dev/ttyUSB1',  baudrate=115200, timeout=1)
 
         # Data from the Hatpic device
@@ -41,8 +32,10 @@ class Hatpic:
         self.state = State()
         self.pose_stamped = PoseStamped()
 
+        # Subscribe to wrenchapplied on the robot body
         self.wrench_sub = rospy.Subscriber("/wrench_estimation", WrenchStamped, self.wrench_feedback_callback)
 
+        # Publish for the robot a new position
         self.cmd_robot_pub = rospy.Publisher('mavros/setpoint_position/local', PoseStamped, queue_size=1)
 
         self.timer_period = 0.033  # 30 Hz
@@ -58,7 +51,6 @@ class Hatpic:
 
     def get_data(self):
         data_list = [b'a', b'b', b'c', b'd' ,b'0', b'-', b'1',b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9']
-        #try:
         data = self.hatpic_ser.read(1)
         start_timing = time.time()
         while data == None:
@@ -113,6 +105,7 @@ class Hatpic:
 
         data_joy_a = msg.wrench.force.z
         
+        # Apply saturation limit of f_max
         data_joy_a *= 100
         if data_joy_a > self.f_max:
             data_joy_a = self.f_max
@@ -120,21 +113,14 @@ class Hatpic:
             data_joy_a = -self.f_max
         data_joy_a += 1000
 
-        print("d: ", str(int(data_joy_a)))
-        #data_joy_a = 1100
-        self.write('ia'+ str(int(data_joy_a)) +'b2000c0d23o')
-        #try:
-        #    self.lin_vel_B = np.array([msg.twist.twist.linear.x,
-        #                               msg.twist.twist.linear.y,
-        #                               msg.twist.twist.linear.z])
-        #    self.ang_vel_B = np.array([msg.twist.twist.angular.x,
-        #                               msg.twist.twist.angular.y,
-        #                               msg.twist.twist.angular.z])
-        #except ValueError:
-        #    pass
+        #print("d: ", str(int(data_joy_a)))
+
+        # Data example ia1250b950c1050d900o
+        self.write('ia'+ str(int(data_joy_a)) +'b0c0d0o')
 
     def joystick_processing(self, data):
         data -= 1000
+        # Dead zone ensures that 0 velocity is sent
         if (data > self.dead_zone) or (data < -self.dead_zone):
             return data * self.k_j
         else:
