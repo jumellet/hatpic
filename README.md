@@ -1,4 +1,8 @@
-# haptic-teleoperation
+# Hatpic joystick
+
+![alt text](https://github.com/jumellet/hatpic/blob/dev/assets/images/hatpic-device.jpg)
+
+The Hatpic device is an open source 1 Degree of Freedom (DoF) haptic joystick.
 
 # Installs
 
@@ -21,5 +25,5 @@ roscore
 in a second terminal,
 
 ```
-python3 hatpi-ros1.py
+python3 hatpic-ros1.py
 ```
