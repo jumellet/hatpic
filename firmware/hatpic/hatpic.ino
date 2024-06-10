@@ -25,7 +25,7 @@ int tmp;
 // Torque control parameters
 const float Kp = -1500.0; // Proportional gain
 const float Ki = 20.0; // Integral gain
-const float Ke = 0.50; // Elastic coefficient
+const float Ke = 0.30; // Elastic coefficient
 
 // Control loop variables
 float torqueSetpoint = 0.0; // Set your desired torque value

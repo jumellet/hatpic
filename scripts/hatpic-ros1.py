@@ -24,11 +24,12 @@ class Hatpic:
         self.data_d = 0
 
         # Coefficient of the joystick
-        self.k_j = 0.00033
+        self.k_j = 0.0005
         self.dead_zone = 22
         self.f_max = 350
 
         # Robot's variables
+        self.k_b = 350
         self.state = State()
         self.pose_stamped = PoseStamped()
 
@@ -106,7 +107,7 @@ class Hatpic:
         data_joy_a = msg.wrench.force.z
         
         # Apply saturation limit of f_max
-        data_joy_a *= 250
+        data_joy_a *= self.k_b
         if data_joy_a > self.f_max:
             data_joy_a = self.f_max
         elif data_joy_a < -self.f_max:
@@ -132,7 +133,7 @@ class Hatpic:
             x = self.joystick_processing(datas[0])
             self.pose_stamped.pose.position.x += x
             self.pose_stamped.pose.position.y = 0
-            self.pose_stamped.pose.position.z = 1
+            self.pose_stamped.pose.position.z = 0.5
 
             self.pose_stamped.pose.orientation.x = 0
             self.pose_stamped.pose.orientation.y = 0
