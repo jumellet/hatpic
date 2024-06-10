@@ -15,7 +15,7 @@ import time
 class Hatpic:
     def __init__(self):
         # Check address of the port
-        self.hatpic_ser = serial.Serial(port='/dev/ttyUSB1',  baudrate=115200, timeout=1)
+        self.hatpic_ser = serial.Serial(port='/dev/ttyUSB0',  baudrate=115200, timeout=1)
 
         # Data from the Hatpic device
         self.data_a = 0
@@ -26,7 +26,7 @@ class Hatpic:
         # Coefficient of the joystick
         self.k_j = 0.00033
         self.dead_zone = 22
-        self.f_max = 150
+        self.f_max = 350
 
         # Robot's variables
         self.state = State()
@@ -106,7 +106,7 @@ class Hatpic:
         data_joy_a = msg.wrench.force.z
         
         # Apply saturation limit of f_max
-        data_joy_a *= 100
+        data_joy_a *= 250
         if data_joy_a > self.f_max:
             data_joy_a = self.f_max
         elif data_joy_a < -self.f_max:
@@ -132,7 +132,7 @@ class Hatpic:
             x = self.joystick_processing(datas[0])
             self.pose_stamped.pose.position.x += x
             self.pose_stamped.pose.position.y = 0
-            self.pose_stamped.pose.position.z = 3
+            self.pose_stamped.pose.position.z = 1
 
             self.pose_stamped.pose.orientation.x = 0
             self.pose_stamped.pose.orientation.y = 0
