@@ -37,6 +37,9 @@ class Hatpic(Node):
         self.data_b = 0
         self.data_c = 0
         self.data_d = 0
+        
+        self.roll  = 0
+        self.pitch = 0
 
         # Coefficient of the joystick
         self.k_j = 0.0005
@@ -91,7 +94,7 @@ class Hatpic(Node):
         return self.classification(self.get_data())
 
     def get_data(self):
-        data_list = [b'a', b'b', b'c', b'd' ,b'0', b'-', b'1',b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9']
+        data_list = [b'a', b'b', b'c', b'd', b'p' ,b'r' ,b'0', b'-', b'1',b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9']
         data = self.hatpic_ser.read(1)
         start_timing = time.time()
         while data == None:
@@ -134,7 +137,9 @@ class Hatpic(Node):
                 self.data_a = int(self.extraction_value(data_frame, 'a', 'b'))
                 self.data_b = int(self.extraction_value(data_frame, 'b', 'c'))
                 self.data_c = int(self.extraction_value(data_frame, 'c', 'd'))
-                self.data_d = int(self.extraction_value(data_frame, 'd', 'o'))
+                self.data_d = int(self.extraction_value(data_frame, 'd', 'r'))
+                self.roll   = int(self.extraction_value(data_frame, 'r', 'p'))
+                self.pitch  = int(self.extraction_value(data_frame, 'p', 'o'))
                 data_hatpic = [self.data_a, self.data_b, self.data_c, self.data_d]
                 return data_hatpic
 
