@@ -13,6 +13,7 @@
 
 // - - - IMU Config - - -
 #include "SparkFun_BMI270_Arduino_Library.h"
+#include <Wire.h>
 BMI270 imu;
 uint8_t i2cAddress = BMI2_I2C_SEC_ADDR;         // 0x69
 
@@ -56,12 +57,10 @@ float GyroErrorX = 0.0;
 float GyroErrorY = 0.0;
 float GyroErrorZ = 0.0;
 
-
+int mappedPitch, mappedRoll;
 
 // - - - Core config - - -
 TaskHandle_t Task1;                             // Task working on core 1 - wifi
-
-
 
 // - - - Smart Servo Config
 #include <SCServo.h> 
@@ -105,15 +104,15 @@ void setup() {
   Serial.begin(115200);
   Serial.println(" ");
   Serial.println("STS3032 Torque control");
-
-  if (imu.beginI2C(i2cAddress) != BMI2_OK){
+  Wire.begin(); delay(100);
+  while(imu.beginI2C(i2cAddress) != BMI2_OK){
     Serial.println("IMU not connected");
-    while(1);
+    delay(1000);
   }
-  else {
-    Serial.println("IMU connected");
-    xTaskCreatePinnedToCore(get_imu,"Task1",10000, NULL,1,&Task1,1);
-  }
+
+  Serial.println("IMU connected");
+  xTaskCreatePinnedToCore(get_imu,"Task1",10000, NULL,1,&Task1,1);
+  
  
   Serial2.begin(1000000, SERIAL_8N1, RXD2, TXD2);
   motor.pSerial = &Serial2;
@@ -233,9 +232,9 @@ void send_cmd(){
   Serial.print(String(pos_M4));
 
   Serial.print("r");
-  Serial.print(String(roll_IMU));
+  Serial.print(String(mappedRoll));
   Serial.print("p");
-  Serial.print(String(pitch_IMU));
+  Serial.print(String(mappedPitch));
   
   Serial.println("o");
 }
@@ -340,7 +339,14 @@ void Madgwick6DOF(float gx, float gy, float gz, float ax, float ay, float az, fl
   roll_IMU  =  atan2(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2)*57.29577951;  //degrees
   pitch_IMU = -asin(-2.0f * (q1*q3 - q0*q2))*57.29577951;               //degrees
   yaw_IMU   = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3)*57.29577951;  //degrees
+
+  mappedRoll  = map(roll_IMU,  -90, 90, 0, 2000);
+  mappedPitch = map(pitch_IMU, -90, 90, 0, 2000);
+
 }
+
+  
+  
 
 float invSqrt(float x) {
   //Fast inverse sqrt for madgwick filter
