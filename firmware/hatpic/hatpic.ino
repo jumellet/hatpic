@@ -104,12 +104,9 @@ float integralLimit = 2000.0;  // Adjust as needed
 int acc = 200;
 int baseSpeed = 100; // Set your base speed value
 int interval = 1;
-int interval2 = 10;
 
 unsigned long loopEndTime = millis();
 unsigned long loopStartTime = millis();
-unsigned long loopEndTime2 = millis();
-unsigned long loopStartTime2 = millis();
 
 char serial_data;
 String serial_trame;
@@ -183,7 +180,6 @@ void loop() {
   
 
   loopStartTime = millis();
-  loopStartTime2 = millis();
 
   // Read torque feedback from the sensor
   torqueFeedback1 = motor.ReadLoad(1);
@@ -257,9 +253,7 @@ void loop() {
     // if (tmp != -1) {
     //   pos_M1 = tmp;
   //}
-  if (loopStartTime2 - loopEndTime2 > interval2) { 
-    loopEndTime2 = millis();
-    send_cmd();
+  send_cmd();
   }
   
 }
