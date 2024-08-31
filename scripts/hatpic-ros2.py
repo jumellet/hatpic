@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env/python
 """
 File: hatpic-ros2.py
 Authors: Julien Mellet, and Simon Le berre
@@ -10,12 +10,10 @@ import rclpy
 import numpy as np
 import serial
 import time
-from geometry_msgs.msg import WrenchStamped, PoseStamped
+from geometry_msgs.msg import Wrench, Pose
 from rclpy.node import Node
 from rclpy.clock import Clock
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
-from px4_msgs.msg import State, TrajectorySetpoint
-from px4_msgs.msg import OffboardControlMode
 
 class Hatpic(Node):
 
@@ -48,39 +46,21 @@ class Hatpic(Node):
 
         # Robot's variables
         self.k_b = 350
-        self.state = State()
-        self.pose_stamped = PoseStamped()
+        self.pose = Pose()
 
         # Subscriber
-        self.odom_sub = self.create_subscription(
-            WrenchStamped,
+        self.wrench_sub = self.create_subscription(
+            Wrench,
             '/wrench_estimation',
             self.wrench_feedback_callback,
             qos_profile)
 
         # Publisher
-        self.trajectory_pub = self.create_publisher(TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
-
-        #self.velocity = VehicleOdometry
-        #self.angular_velocity = VehicleOdometry
-        #self.cmd_thrust = VehicleThrustSetpoint
-        #self.cmd_torque = VehicleTorqueSetpoint
-        self.vehicle_mass = 2.5
-        self.vehicle_inertia = np.array([[0.15, 0, 0],
-                                         [0, 0.15, 0],
-                                         [0, 0, 0.1]])
-        self.ext_lin_acc = np.zeros(3)
-        self.ext_ang_acc = np.zeros(3)
-        self.int_vec_lin = np.zeros(3)
-        self.int_vec_ang = np.zeros(3)
-        self.gravity = np.array([0, 0, 9.81])  # Assuming gravity is along the z-axis
+        self.pose_ref_pub = self.create_publisher(Pose, '/pose', qos_profile)
 
         # Create timer for periodic execution
         self.timer_period = 0.02  # seconds
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
-
-        self.k_I_lin = np.array([0.9, 0.9, 0.9])
-        self.k_I_ang = np.array([0.9, 0.9, 0.9])
 
     #def torque_callback(self, msg):
     #    self.cmd_torque = np.array([msg.xyz[0], msg.xyz[1], msg.xyz[2]])
@@ -140,7 +120,14 @@ class Hatpic(Node):
                 self.data_d = int(self.extraction_value(data_frame, 'd', 'p'))
                 self.pitch  = int(self.extraction_value(data_frame, 'p', 'r'))
                 self.roll   = int(self.extraction_value(data_frame, 'r', 'o'))
-                data_hatpic = [self.data_a, self.data_b, self.data_c, self.data_d]
+                data_hatpic = [self.data_a, self.data_b, self.data_c, self.data_d, self.pitch, self.roll]
+                print("data a ", data_hatpic[0])
+                print("data b ", data_hatpic[1])
+                print("data c ", data_hatpic[2])
+                print("data c ", data_hatpic[3])
+                print("data p ", data_hatpic[4])
+                print("data r ", data_hatpic[5])
+                
                 return data_hatpic
 
     def wrench_feedback_callback(self, msg):
@@ -148,8 +135,6 @@ class Hatpic(Node):
         data_joy_b = msg.wrench.force.y
         data_joy_c = msg.wrench.force.z
         data_joy_d = msg.wrench.torque.z
-
-        data_joy_a = msg.wrench.force.z
         
         # Apply saturation limit of f_max
         data_joy_a *= self.k_b
@@ -158,7 +143,8 @@ class Hatpic(Node):
         elif data_joy_a < -self.f_max:
             data_joy_a = -self.f_max
         data_joy_a += 1000
-
+        
+        data_joy_a = 0
         #print("d: ", str(int(data_joy_a)))
 
         # Data example ia1250b950c1050d900o
@@ -173,7 +159,9 @@ class Hatpic(Node):
             return 0
 
     def timer_callback(self):
-        self.calculate_wrench_estimate()
+        #self.pose_ref_pub
+        #self.calculate_wrench_estimate()
+        pass
 
 
 def main(args=None):
