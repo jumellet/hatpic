@@ -33,7 +33,7 @@ class Hatpic:
         self.state = State()
         self.pose_stamped = PoseStamped()
 
-        # Subscribe to wrenchapplied on the robot body
+        # Subscribe to wrench applied on the robot body
         self.wrench_sub = rospy.Subscriber("/wrench_estimation", WrenchStamped, self.wrench_feedback_callback)
 
         # Publish for the robot a new position
