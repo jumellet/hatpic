@@ -243,19 +243,23 @@ void loop() {
   if (speedControlOutput4 < -20000) {speedControlOutput4 = -20000;}
   motor.WriteSpe(4, speedControlOutput4, acc);
 
-
   if (loopStartTime - loopEndTime > interval) { 
     loopEndTime = millis();
-    pos_M1 = motor.ReadPos(1);
-    pos_M2 = motor.ReadPos(2);
-    pos_M3 = motor.ReadPos(3);
-    pos_M4 = motor.ReadPos(4);
-    // if (tmp != -1) {
-    //   pos_M1 = tmp;
-  //}
+    // Flush -1 data
+    tmp = motor.ReadPos(1);
+    if (tmp != -1) {
+       pos_M1 = tmp;}
+    tmp = motor.ReadPos(2);
+    if (tmp != -1) {
+       pos_M2 = tmp;}
+    tmp = motor.ReadPos(3);
+    if (tmp != -1) {
+       pos_M3 = tmp;}
+    tmp = motor.ReadPos(4);
+    if (tmp != -1) {
+       pos_M4 = tmp;}
   send_cmd();
   }
-  
 }
 
 void check_trame(String trame){
