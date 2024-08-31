@@ -1,16 +1,8 @@
-#!/usr/bin/env/python
-"""
-File: hatpic-ros2.py
-Authors: Julien Mellet, and Simon Le berre
-Date: 2024-07-29
-Description: A Python script to use the hatpic device to send some commands for a PX4 drone through ROS2.
-"""
-
 import serial
 import threading
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Pose, Wrench
+from geometry_msgs.msg import Twist, Wrench
 
 class Haptic(Node):
     def __init__(self, serial_port='/dev/ttyUSB0', baud_rate=115200, timeout=0.01):
@@ -21,7 +13,7 @@ class Haptic(Node):
         self.ser = None
         self.data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.data_lock = threading.Lock()  # Lock for synchronizing access to shared data
-        self.pose_pub = self.create_publisher(Pose, 'haptic_pose', 10)
+        self.twist_pub = self.create_publisher(Twist, 'haptic_twist', 10)
         self.wrench_sub = self.create_subscription(
             Wrench,
             'wrench_topic',
@@ -118,17 +110,23 @@ class Haptic(Node):
     def publish_data(self):
         with self.data_lock:  # Lock the data before accessing it
             if self.data:
-                msg = Pose()
-                msg.position.x = self.data[0]  # Example mapping
-                msg.position.y = self.data[1]  # Example mapping
-                msg.position.z = self.data[2]  # Example mapping
-                msg.orientation.x = self.data[3]  # Example mapping
-                msg.orientation.y = self.data[4]  # Example mapping
-                msg.orientation.z = self.data[5]  # Example mapping
-                msg.orientation.w = 1.0  # Assuming full quaternion is not provided
+                msg = Twist()
                 
-                self.pose_pub.publish(msg)
-                self.get_logger().info(f"Published pose: {self.data}")
+                # Scaling other data to [-2, 2]
+                msg.linear.x = -(self.data[0] - 1000) / 500.0  # x-axis position
+                msg.linear.y = -(self.data[1] - 1000) / 500.0  # y-axis position
+                msg.linear.z =  (self.data[2] - 1000) / 1000.0  # z-axis position
+                
+                # Scaling roll and pitch to [-180, 180]
+                msg.angular.x = -((self.data[4] - 1000) / 1000.0) * 180  # pitch
+                msg.angular.y =  ((self.data[5] - 1000) / 1000.0) * 180  # roll
+                
+                # Scaling yaw rate to [-2, 2]
+                msg.angular.z =  (self.data[3] - 1000) / 500.0  # yaw
+                
+                self.twist_pub.publish(msg)
+                self.get_logger().info(f"Published twist: {msg.linear.x}, {msg.linear.y}, {msg.linear.z}, {msg.angular.x}, {msg.angular.y}, {msg.angular.z}")
+
 
     def wrench_callback(self, msg):
         # Extract force and torque from the Wrench message
@@ -140,8 +138,7 @@ class Haptic(Node):
         # Construct the data string to send to the joystick
         # Example: ia1250b950c1050d900o
         data_string = f"ia{int(data_joy_a)}b{int(data_joy_b)}c{int(data_joy_c)}d{int(data_joy_d)}o"
-        print(data_string)
-        #self.write(data_string)
+        self.write(data_string)
 
     def disconnect(self):
         if self.ser and self.ser.is_open:
