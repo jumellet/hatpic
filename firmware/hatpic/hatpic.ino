@@ -104,12 +104,9 @@ float integralLimit = 2000.0;  // Adjust as needed
 int acc = 200;
 int baseSpeed = 100; // Set your base speed value
 int interval = 1;
-int interval2 = 10;
 
 unsigned long loopEndTime = millis();
 unsigned long loopStartTime = millis();
-unsigned long loopEndTime2 = millis();
-unsigned long loopStartTime2 = millis();
 
 char serial_data;
 String serial_trame;
@@ -183,7 +180,6 @@ void loop() {
   
 
   loopStartTime = millis();
-  loopStartTime2 = millis();
 
   // Read torque feedback from the sensor
   torqueFeedback1 = motor.ReadLoad(1);
@@ -247,21 +243,23 @@ void loop() {
   if (speedControlOutput4 < -20000) {speedControlOutput4 = -20000;}
   motor.WriteSpe(4, speedControlOutput4, acc);
 
-
   if (loopStartTime - loopEndTime > interval) { 
     loopEndTime = millis();
-    pos_M1 = motor.ReadPos(1);
-    pos_M2 = motor.ReadPos(2);
-    pos_M3 = motor.ReadPos(3);
-    pos_M4 = motor.ReadPos(4);
-    // if (tmp != -1) {
-    //   pos_M1 = tmp;
-  //}
-  if (loopStartTime2 - loopEndTime2 > interval2) { 
-    loopEndTime2 = millis();
-    send_cmd();
+    // Flush -1 data
+    tmp = motor.ReadPos(1);
+    if (tmp != -1) {
+       pos_M1 = tmp;}
+    tmp = motor.ReadPos(2);
+    if (tmp != -1) {
+       pos_M2 = tmp;}
+    tmp = motor.ReadPos(3);
+    if (tmp != -1) {
+       pos_M3 = tmp;}
+    tmp = motor.ReadPos(4);
+    if (tmp != -1) {
+       pos_M4 = tmp;}
+  send_cmd();
   }
-  
 }
 
 void check_trame(String trame){
