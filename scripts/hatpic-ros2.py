@@ -137,9 +137,9 @@ class Hatpic(Node):
                 self.data_a = int(self.extraction_value(data_frame, 'a', 'b'))
                 self.data_b = int(self.extraction_value(data_frame, 'b', 'c'))
                 self.data_c = int(self.extraction_value(data_frame, 'c', 'd'))
-                self.data_d = int(self.extraction_value(data_frame, 'd', 'r'))
-                self.roll   = int(self.extraction_value(data_frame, 'r', 'p'))
-                self.pitch  = int(self.extraction_value(data_frame, 'p', 'o'))
+                self.data_d = int(self.extraction_value(data_frame, 'd', 'p'))
+                self.pitch  = int(self.extraction_value(data_frame, 'p', 'r'))
+                self.roll   = int(self.extraction_value(data_frame, 'r', 'o'))
                 data_hatpic = [self.data_a, self.data_b, self.data_c, self.data_d]
                 return data_hatpic
 

@@ -78,19 +78,32 @@ int tmp;
 
 // Torque control parameters
 const float Kp = -1500.0; // Proportional gain
-const float Ki = 20.0; // Integral gain
-const float Ke = 0.30; // Elastic coefficient
+const float Ki = 21.0; // Integral gain
+const float Ke = 0.70; // Elastic coefficient
 
 // Control loop variables
-float torqueSetpoint = 0.0; // Set your desired torque value
-float torqueFeedback = 0.0;
+float torqueSetpoint1 = 0.0; // Set your desired torque value..
+float torqueSetpoint2 = 0.0; // Set your desired torque value..
+float torqueSetpoint3 = 0.0; // Set your desired torque value..
+float torqueSetpoint4 = 0.0; // Set your desired torque value..
+
+float torqueFeedback1 = 0.0;
+float torqueFeedback2 = 0.0;
+float torqueFeedback3 = 0.0;
+float torqueFeedback4 = 0.0;
+
 float externalForceFeedback = 0.0; // External force
-float integralTerm = 0.0;
+float integralTerm1 = 0.0;
+float integralTerm2 = 0.0;
+float integralTerm3 = 0.0;
+float integralTerm4 = 0.0;
+
 float integralLimit = 2000.0;  // Adjust as needed
 
 // Base motor speed (adjust as needed)
+int acc = 200;
 int baseSpeed = 100; // Set your base speed value
-int interval = 200;
+int interval = 1;
 
 unsigned long loopEndTime = millis();
 unsigned long loopStartTime = millis();
@@ -104,6 +117,8 @@ void setup() {
   Serial.begin(115200);
   Serial.println(" ");
   Serial.println("STS3032 Torque control");
+  
+  //- imu -
   Wire.begin(); delay(100);
   while(imu.beginI2C(i2cAddress) != BMI2_OK){
     Serial.println("IMU not connected");
@@ -113,27 +128,39 @@ void setup() {
   Serial.println("IMU connected");
   xTaskCreatePinnedToCore(get_imu,"Task1",10000, NULL,1,&Task1,1);
   
- 
+  //- motor -
   Serial2.begin(1000000, SERIAL_8N1, RXD2, TXD2);
   motor.pSerial = &Serial2;
   delay(1000);
  
-  Serial.print("Current pos motor : ");
-  Serial.println(motor.ReadPos(1));
- 
+  Serial.print("Current pos motor 1: "); Serial.println(motor.ReadPos(1));
   pos_M1 = motor.ReadPos(1);
-  Serial.print("Current pos motor : ");
-  Serial.println(pos_M1);
+  Serial.print("Current pos motor 1: "); Serial.println(pos_M1);
+  Serial.print("torque motor 1: ");      Serial.println(motor.FeedBack(1));
+
+  Serial.print("Current pos motor 2: "); Serial.println(motor.ReadPos(2));
+  pos_M2 = motor.ReadPos(2);
+  Serial.print("Current pos motor 2: "); Serial.println(pos_M2);
+  Serial.print("torque motor 2: ");      Serial.println(motor.FeedBack(2));
+
+  Serial.print("Current pos motor 3: "); Serial.println(motor.ReadPos(3));
+  pos_M3 = motor.ReadPos(3);
+  Serial.print("Current pos motor 3: "); Serial.println(pos_M3);
+  Serial.print("torque motor 3: ");      Serial.println(motor.FeedBack(3));
+
+  Serial.print("Current pos motor 4: "); Serial.println(motor.ReadPos(4));
+  pos_M4 = motor.ReadPos(4);
+  Serial.print("Current pos motor 4: "); Serial.println(pos_M4);
+  Serial.print("torque motor 4: ");      Serial.println(motor.FeedBack(4));
+
+  delay(2000);
  
   //Wheel mode for ID1
   //motor.WriteMode(1, 1);
   //motor.WheelMode(1);
   //motor.WriteTorqueLimit(1, 1);
   //motor.EnableTorque(1, 0);  // 0 to disconnect the motor     1 to activate torque 
-  
-  Serial.println(motor.FeedBack(1));
- 
-  delay(100);
+
 }
 
 void loop() {
@@ -149,51 +176,86 @@ void loop() {
     }
     else{Serial.flush();}
   }
-  // Record the start time of the control loop in microseconds
+  // Record the start time of the control loop in milli
+  
+
   loopStartTime = millis();
 
   // Read torque feedback from the sensor
-  torqueFeedback = motor.ReadLoad(1);
+  torqueFeedback1 = motor.ReadLoad(1);
+  torqueFeedback2 = motor.ReadLoad(2);
+  torqueFeedback3 = motor.ReadLoad(3);
+  torqueFeedback4 = motor.ReadLoad(4);
 
   // Calculate torque error
-  float torqueError = torqueSetpoint - torqueFeedback;
+  float torqueError1 = torqueSetpoint1 - torqueFeedback1;
+  float torqueError2 = torqueSetpoint2 - torqueFeedback2;
+  float torqueError3 = torqueSetpoint3 - torqueFeedback3;
+  float torqueError4 = torqueSetpoint4 - torqueFeedback4;
 
   // Calculate integral term
-  integralTerm += Ki * torqueError;
+  integralTerm1 += Ki * torqueError1;
+  integralTerm2 += Ki * torqueError2;
+  integralTerm3 += Ki * torqueError3;
+  integralTerm4 += Ki * torqueError4;
 
   // Anti-windup - limit the integral term to prevent excessive accumulation
-  integralTerm = constrain(integralTerm, -integralLimit, integralLimit);
+  integralTerm1 = constrain(integralTerm1, -integralLimit, integralLimit);
+  integralTerm2 = constrain(integralTerm2, -integralLimit, integralLimit);
+  integralTerm3 = constrain(integralTerm3, -integralLimit, integralLimit);
+  integralTerm4 = constrain(integralTerm4, -integralLimit, integralLimit);
 
   // Calculate spring effect
-  torqueSetpoint = Ke * (motor.ReadPos(1)-1000);
+  torqueSetpoint1 = Ke * (motor.ReadPos(1)-1000);
+  torqueSetpoint2 = Ke * (motor.ReadPos(2)-1000);
+  torqueSetpoint3 = Ke * (motor.ReadPos(3)-1000);
+  torqueSetpoint4 = Ke * (motor.ReadPos(4)-1000);
 
   // Adjust torque setpoint based on force sensor feedback
-  torqueSetpoint += tmp_data_a;
+  torqueSetpoint1 += tmp_data_a;
+  torqueSetpoint2 += tmp_data_b;
+  torqueSetpoint3 += tmp_data_c;
+  torqueSetpoint4 += tmp_data_d;
   
   //Serial.print("torque setpoint: ");
   //Serial.println(String(torqueSetpoint));
 
   // Calculate speed control output using PI control
-  float speedControlOutput = Kp * torqueError + Ki * integralTerm;
-  if (speedControlOutput > 20000){
-    speedControlOutput = 20000;
-  }
-  if (speedControlOutput < -20000){
-    speedControlOutput = -20000;
-  }
+  float speedControlOutput1 = Kp * torqueError1 + Ki * integralTerm1;
+  float speedControlOutput2 = Kp * torqueError2 + Ki * integralTerm2;
+  float speedControlOutput3 = Kp * torqueError3 + Ki * integralTerm3;
+  float speedControlOutput4 = Kp * torqueError4 + Ki * integralTerm4;
 
-  // Update motor speed
-  int motorSpeed = motor.ReadSpeed(1);   
-  motor.WriteSpe(1, speedControlOutput, 240);
+  // Limitation values
+  if (speedControlOutput1 > 20000)  {speedControlOutput1 = 20000;}
+  if (speedControlOutput1 < -20000) {speedControlOutput1 = -20000;}
+  motor.WriteSpe(1, speedControlOutput1, acc);
+
+  if (speedControlOutput2 > 20000)  {speedControlOutput2 = 20000;}
+  if (speedControlOutput2 < -20000) {speedControlOutput2 = -20000;}
+  motor.WriteSpe(2, speedControlOutput2, acc);
+
+  if (speedControlOutput3 > 20000)  {speedControlOutput3 = 20000;}
+  if (speedControlOutput3 < -20000) {speedControlOutput3 = -20000;}
+  motor.WriteSpe(3, speedControlOutput3, acc);
+
+  if (speedControlOutput4 > 20000)  {speedControlOutput4 = 20000;}
+  if (speedControlOutput4 < -20000) {speedControlOutput4 = -20000;}
+  motor.WriteSpe(4, speedControlOutput4, acc);
+
 
   if (loopStartTime - loopEndTime > interval) { 
     loopEndTime = millis();
-    tmp = motor.ReadPos(1);
-    if (tmp != -1) {
-      pos_M1 = tmp;
-    }
-    send_cmd();
+    pos_M1 = motor.ReadPos(1);
+    pos_M2 = motor.ReadPos(2);
+    pos_M3 = motor.ReadPos(3);
+    pos_M4 = motor.ReadPos(4);
+    // if (tmp != -1) {
+    //   pos_M1 = tmp;
+  //}
+  send_cmd();
   }
+  
 }
 
 void check_trame(String trame){
@@ -231,9 +293,9 @@ void send_cmd(){
   Serial.print("d");
   Serial.print(String(pos_M4));
 
-  Serial.print("r");
+  Serial.print("p");                     // attention reverse angle
   Serial.print(String(mappedRoll));
-  Serial.print("p");
+  Serial.print("r");
   Serial.print(String(mappedPitch));
   
   Serial.println("o");
@@ -340,14 +402,21 @@ void Madgwick6DOF(float gx, float gy, float gz, float ax, float ay, float az, fl
   pitch_IMU = -asin(-2.0f * (q1*q3 - q0*q2))*57.29577951;               //degrees
   yaw_IMU   = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3)*57.29577951;  //degrees
 
-  mappedRoll  = map(roll_IMU,  -90, 90, 0, 2000);
+  //Mapped angles
+  if (roll_IMU < 0) {mappedRoll = map(roll_IMU,  -90, -180, 0, 1000);}
+  else              {mappedRoll = map(roll_IMU,  180, 90, 1000, 2000);}
   mappedPitch = map(pitch_IMU, -90, 90, 0, 2000);
+
+  // Border case 
+  if (mappedRoll < 0)     {mappedRoll = 0;}
+  if (mappedRoll > 2000)  {mappedRoll = 2000;}
+
+  if (mappedPitch < 0)    {mappedPitch = 0;}
+  if (mappedPitch > 2000) {mappedPitch = 2000;}
 
 }
 
   
-  
-
 float invSqrt(float x) {
   //Fast inverse sqrt for madgwick filter
 
