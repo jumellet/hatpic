@@ -121,7 +121,7 @@ class Hatpic:
 
     def joystick_processing(self, data):
         data -= 1000
-        # Dead zone ensures that 0 velocity is sent
+        # Dead zone ensures that 0 velocity is sent at idle position
         if (data > self.dead_zone) or (data < -self.dead_zone):
             return data * self.k_j
         else:
