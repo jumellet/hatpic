@@ -68,12 +68,15 @@ SMS_STS motor;
 #define RXD2 16 
 #define TXD2 17 
  
-int load_M1; 
 int pos_M1 = 1000;
 int pos_M2 = 1000;
 int pos_M3 = 1000;
 int pos_M4 = 1000;
-int vel_M1;
+
+int offset_M1 = 20;
+int offset_M2 = -80;
+int offset_M3 = 20;
+int offset_M4 = 80;
 int tmp;
 
 // Torque control parameters
@@ -206,10 +209,10 @@ void loop() {
   integralTerm4 = constrain(integralTerm4, -integralLimit, integralLimit);
 
   // Calculate spring effect
-  torqueSetpoint1 = Ke * (motor.ReadPos(1)-1000);
-  torqueSetpoint2 = Ke * (motor.ReadPos(2)-1000);
-  torqueSetpoint3 = Ke * (motor.ReadPos(3)-1000);
-  torqueSetpoint4 = Ke * (motor.ReadPos(4)-1000);
+  torqueSetpoint1 = Ke * (motor.ReadPos(1) - (1000 + offset_M1));
+  torqueSetpoint2 = Ke * (motor.ReadPos(2) - (1000 + offset_M2));
+  torqueSetpoint3 = Ke * (motor.ReadPos(3) - (1000 + offset_M3));
+  torqueSetpoint4 = Ke * (motor.ReadPos(4) - (1000 + offset_M4));
 
   // Adjust torque setpoint based on force sensor feedback
   torqueSetpoint1 += tmp_data_a;
@@ -276,13 +279,13 @@ void trame2data(String trame){
 
   if((aIndex != -1) and (bIndex != -1) and (cIndex != -1) and (dIndex != -1) and (oIndex != -1)) {
     data_a = trame.substring(aIndex + 1, bIndex).toInt();
-    tmp_data_a = data_a - 1000;
+    tmp_data_a = data_a - (1000 + offset_M1);
     data_b = trame.substring(bIndex + 1, cIndex).toInt();
-    tmp_data_b = data_b - 1000;
+    tmp_data_b = data_b - (1000 + offset_M2);
     data_c = trame.substring(cIndex + 1, dIndex).toInt();
-    tmp_data_c = data_c - 1000;
+    tmp_data_c = data_c - (1000 + offset_M3);
     data_d = trame.substring(dIndex + 1, oIndex).toInt();
-    tmp_data_d = data_d - 1000; 
+    tmp_data_d = data_d - (1000 + offset_M4); 
   }
 }
 
