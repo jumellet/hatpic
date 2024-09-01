@@ -12,6 +12,7 @@ class Haptic(Node):
         self.timeout = timeout
         self.ser = None
         self.data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.dead_zone = 30
         self.data_lock = threading.Lock()  # Lock for synchronizing access to shared data
         self.twist_pub = self.create_publisher(Twist, 'haptic_twist', 10)
         self.wrench_sub = self.create_subscription(
@@ -106,23 +107,29 @@ class Haptic(Node):
         else:
             self.get_logger().warning("Invalid data frame received")
         return None
+    
+    def deadzone_and_scale(self, value, deadzone, scale_factor):
+        if abs(value - 1000) <= deadzone:
+            return 0.0  # Zero out within the deadzone
+        else:
+            return ((value - 1000) / 1000.0) * scale_factor
 
     def publish_data(self):
         with self.data_lock:  # Lock the data before accessing it
             if self.data:
                 msg = Twist()
                 
-                # Scaling other data to [-2, 2]
-                msg.linear.x = -(self.data[0] - 1000) / 500.0  # x-axis position
-                msg.linear.y = -(self.data[1] - 1000) / 500.0  # y-axis position
-                msg.linear.z =  (self.data[2] - 1000) / 1000.0  # z-axis position
+                 # Apply deadzone and scale for linear values [-2, 2]
+                msg.linear.x = -self.deadzone_and_scale(self.data[0], self.dead_zone, 2)  # x-axis position
+                msg.linear.y = -self.deadzone_and_scale(self.data[1], self.dead_zone, 2)  # y-axis position
+                msg.linear.z =  self.deadzone_and_scale(self.data[2], self.dead_zone, 2)  # z-axis position
                 
-                # Scaling roll and pitch to [-180, 180]
-                msg.angular.x = -((self.data[4] - 1000) / 1000.0) * 180  # pitch
-                msg.angular.y =  ((self.data[5] - 1000) / 1000.0) * 180  # roll
+                # Apply deadzone and scale for angular values [-180, 180]
+                msg.angular.x = -self.deadzone_and_scale(self.data[4], 0, 180)  # pitch
+                msg.angular.y =  self.deadzone_and_scale(self.data[5], 0, 180)  # roll
                 
-                # Scaling yaw rate to [-2, 2]
-                msg.angular.z =  (self.data[3] - 1000) / 500.0  # yaw
+                # Apply deadzone and scale for yaw [-2, 2]
+                msg.angular.z =  self.deadzone_and_scale(self.data[3], self.dead_zone, 2)  # yaw
                 
                 self.twist_pub.publish(msg)
                 self.get_logger().info(f"Published twist: {msg.linear.x}, {msg.linear.y}, {msg.linear.z}, {msg.angular.x}, {msg.angular.y}, {msg.angular.z}")
