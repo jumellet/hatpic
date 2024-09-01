@@ -4,11 +4,8 @@
   the computer throug serial communication.
 
   Authors: Julien Mellet, and Simon Le Berre
-  Date: May 26, 2024
-
-  Additional Notes: This is a basic example to demonstrate digital output.
-
-  Review Date 30/08/2024
+  Date:   May 26, 2024
+  Review: August 30, 2024
 */
 
 // - - - IMU Config - - -
@@ -82,7 +79,7 @@ int tmp;
 // Torque control parameters
 const float Kp = -1500.0; // Proportional gain
 const float Ki = 21.0; // Integral gain
-const float Ke = 0.70; // Elastic coefficient
+const float Ke = 0.60; // Elastic coefficient
 
 // Control loop variables
 float torqueSetpoint1 = 0.0; // Set your desired torque value..
@@ -180,8 +177,6 @@ void loop() {
     else{Serial.flush();}
   }
   // Record the start time of the control loop in milli
-  
-
   loopStartTime = millis();
 
   // Read torque feedback from the sensor
@@ -208,11 +203,17 @@ void loop() {
   integralTerm3 = constrain(integralTerm3, -integralLimit, integralLimit);
   integralTerm4 = constrain(integralTerm4, -integralLimit, integralLimit);
 
-  // Calculate spring effect
-  torqueSetpoint1 = Ke * (motor.ReadPos(1) - (1000 + offset_M1));
-  torqueSetpoint2 = Ke * (motor.ReadPos(2) - (1000 + offset_M2));
-  torqueSetpoint3 = Ke * (motor.ReadPos(3) - (1000 + offset_M3));
-  torqueSetpoint4 = Ke * (motor.ReadPos(4) - (1000 + offset_M4));
+  // Calculate Ke dynamically based on motor position
+  float dynamicKe1 = calculateKe(motor.ReadPos(1));
+  float dynamicKe2 = calculateKe(motor.ReadPos(2));
+  float dynamicKe3 = calculateKe(motor.ReadPos(3));
+  float dynamicKe4 = calculateKe(motor.ReadPos(4));
+
+  // Calculate spring effect with dynamic Ke
+  torqueSetpoint1 = dynamicKe1 * (motor.ReadPos(1) - (1000 + offset_M1));
+  torqueSetpoint2 = dynamicKe2 * (motor.ReadPos(2) - (1000 + offset_M2));
+  torqueSetpoint3 = dynamicKe3 * (motor.ReadPos(3) - (1000 + offset_M3));
+  torqueSetpoint4 = dynamicKe4 * (motor.ReadPos(4) - (1000 + offset_M4));
 
   // Adjust torque setpoint based on force sensor feedback
   torqueSetpoint1 += tmp_data_a;
@@ -332,6 +333,26 @@ void get_imu(void * pvParameters){
     Madgwick6DOF(GyroX, GyroY, GyroZ, AccX, AccY, AccZ, dt);
     vTaskDelay(20);
   }
+}
+
+float calculateKe(int position) {
+  // Define the center position
+  int centerPosition = 1000;
+
+  // Define the maximum distance from the center position (1000 -> 0 to 2000 range)
+  int maxDistance = 1000;
+
+  // Calculate distance from the center
+  int distanceFromCenter = abs(position - centerPosition);
+
+  // Define minimum and maximum values for Ke
+  float minKe = 0.3;  // Minimum elastic coefficient (adjust as needed)
+  float maxKe = 0.8;  // Maximum elastic coefficient at center (adjust as needed)
+
+  // Calculate Ke as inversely proportional to distance from center
+  float Ke = maxKe - (maxKe - minKe) * (float(distanceFromCenter) / maxDistance);
+
+  return Ke;
 }
 
 void Madgwick6DOF(float gx, float gy, float gz, float ax, float ay, float az, float invSampleFreq) {
