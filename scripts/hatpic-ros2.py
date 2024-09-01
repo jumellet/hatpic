@@ -1,3 +1,12 @@
+#!/usr/bin/env/python
+"""
+File: hatpic-ros2.py
+Authors: Julien Mellet, and Simon Le berre
+Date: 2024-07-29
+Review: 2024-09-01
+Description: A Python script to use the hatpic device to send some command through ROS2.
+"""
+
 import serial
 import threading
 import rclpy
@@ -13,6 +22,8 @@ class Haptic(Node):
         self.ser = None
         self.data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.dead_zone = 30
+        self.f_max = 350
+        self.k_b = 350
         self.data_lock = threading.Lock()  # Lock for synchronizing access to shared data
         self.twist_pub = self.create_publisher(Twist, 'haptic_twist', 10)
         self.wrench_sub = self.create_subscription(
@@ -136,16 +147,31 @@ class Haptic(Node):
 
 
     def wrench_callback(self, msg):
+        # Define saturation limits
+        force_limit = self.f_max 
+
         # Extract force and torque from the Wrench message
         data_joy_a = msg.force.x
         data_joy_b = msg.force.y
         data_joy_c = msg.force.z
         data_joy_d = msg.torque.z
 
+        data_joy_a *= self.k_b
+        data_joy_b *= self.k_b
+        data_joy_c *= self.k_b
+        data_joy_d *= self.k_b
+
+        # Apply saturation limits
+        data_joy_a = max(-force_limit, min(force_limit, data_joy_a)) + 1000
+        data_joy_b = max(-force_limit, min(force_limit, data_joy_b)) + 1000
+        data_joy_c = max(-force_limit, min(force_limit, data_joy_c)) + 1000
+        data_joy_d = max(-force_limit, min(force_limit, data_joy_d)) + 1000
+
         # Construct the data string to send to the joystick
         # Example: ia1250b950c1050d900o
         data_string = f"ia{int(data_joy_a)}b{int(data_joy_b)}c{int(data_joy_c)}d{int(data_joy_d)}o"
-        self.write(data_string)
+        print(data_string)
+        #self.write(data_string)
 
     def disconnect(self):
         if self.ser and self.ser.is_open:
