@@ -245,7 +245,7 @@ void loop() {
 
   if (loopStartTime - loopEndTime > interval) { 
     loopEndTime = millis();
-    // Flush -1 data
+    // Flush -1 when cannot read motor position
     tmp = motor.ReadPos(1);
     if (tmp != -1) {
        pos_M1 = tmp;}
@@ -304,7 +304,6 @@ void send_cmd(){
   
   Serial.println("o");
 }
-
 
 
 // -----------------------------------IMU
@@ -417,9 +416,7 @@ void Madgwick6DOF(float gx, float gy, float gz, float ax, float ay, float az, fl
 
   if (mappedPitch < 0)    {mappedPitch = 0;}
   if (mappedPitch > 2000) {mappedPitch = 2000;}
-
 }
-
   
 float invSqrt(float x) {
   //Fast inverse sqrt for madgwick filter
