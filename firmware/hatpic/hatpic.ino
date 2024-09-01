@@ -71,7 +71,7 @@ int pos_M3 = 1000;
 int pos_M4 = 1000;
 
 int offset_M1 = 20;
-int offset_M2 = -80;
+int offset_M2 = -90;
 int offset_M3 = 20;
 int offset_M4 = 80;
 int tmp;
@@ -339,21 +339,30 @@ float calculateKe(int position) {
   // Define the center position
   int centerPosition = 1000;
 
-  // Define the maximum distance from the center position (1000 -> 0 to 2000 range)
-  int maxDistance = 1000;
+  // Define the range around the center position where the notch effect is felt
+  int notchRange = 30;  // Total width of the notch effect (symmetrically around center)
+  int deadZoneRange = 30;  // Dead zone range around the center where no torque is applied
+
+  // Define minimum and maximum values for Ke
+  float minKe = 0.3;  // Minimum elastic coefficient (when far from center)
+  float maxKe = 0.7;  // Maximum elastic coefficient (at the notch boundaries)
 
   // Calculate distance from the center
   int distanceFromCenter = abs(position - centerPosition);
 
-  // Define minimum and maximum values for Ke
-  float minKe = 0.3;  // Minimum elastic coefficient (adjust as needed)
-  float maxKe = 0.8;  // Maximum elastic coefficient at center (adjust as needed)
-
-  // Calculate Ke as inversely proportional to distance from center
-  float Ke = maxKe - (maxKe - minKe) * (float(distanceFromCenter) / maxDistance);
-
-  return Ke;
+  // Calculate Ke value based on distance from center position
+  if (distanceFromCenter < deadZoneRange) {
+    // Inside the dead zone: No torque is generated
+    return 0.0;
+  } else if (distanceFromCenter <= notchRange) {
+    // Within the notch range: Apply maximum Ke value for noticeable effect
+    return maxKe;
+  } else {
+    // Outside the notch range: Smoothly decrease Ke value
+    return minKe + (maxKe - minKe) * (1.0 - float(distanceFromCenter - notchRange) / (1000 - notchRange));
+  }
 }
+
 
 void Madgwick6DOF(float gx, float gy, float gz, float ax, float ay, float az, float invSampleFreq) {
   //DESCRIPTION: Attitude estimation through sensor fusion - 6DOF
