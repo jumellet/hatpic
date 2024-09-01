@@ -285,6 +285,18 @@ void trame2data(String trame){
 }
 
 void send_cmd(){
+  // Send adjusted position with offset subtracted to maintain range 0-2000 and center at 1000
+  int adjustedPosM1 = pos_M1 - offset_M1;
+  int adjustedPosM2 = pos_M2 - offset_M2;
+  int adjustedPosM3 = pos_M3 - offset_M3;
+  int adjustedPosM4 = pos_M4 - offset_M4;
+
+  // Ensure the values sent are between 0 and 2000
+  adjustedPosM1 = constrain(adjustedPosM1, 0, 2000);
+  adjustedPosM2 = constrain(adjustedPosM2, 0, 2000);
+  adjustedPosM3 = constrain(adjustedPosM3, 0, 2000);
+  adjustedPosM4 = constrain(adjustedPosM4, 0, 2000);
+
   Serial.print("ia");
 
   Serial.print(String(pos_M1));
@@ -295,7 +307,7 @@ void send_cmd(){
   Serial.print("d");
   Serial.print(String(pos_M4));
 
-  Serial.print("p");                     // attention reverse angle
+  Serial.print("p");  // attention reverse angle
   Serial.print(String(mappedRoll));
   Serial.print("r");
   Serial.print(String(mappedPitch));
