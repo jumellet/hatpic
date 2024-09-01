@@ -230,20 +230,15 @@ void loop() {
   float speedControlOutput4 = Kp * torqueError4 + Ki * integralTerm4;
 
   // Limitation values
-  if (speedControlOutput1 > 20000)  {speedControlOutput1 = 20000;}
-  if (speedControlOutput1 < -20000) {speedControlOutput1 = -20000;}
+  speedControlOutput1 = constrain(speedControlOutput1, -20000, 20000);
+  speedControlOutput2 = constrain(speedControlOutput2, -20000, 20000);
+  speedControlOutput3 = constrain(speedControlOutput3, -20000, 20000);
+  speedControlOutput4 = constrain(speedControlOutput4, -20000, 20000);
+
+  // Write speeds to motors
   motor.WriteSpe(1, speedControlOutput1, acc);
-
-  if (speedControlOutput2 > 20000)  {speedControlOutput2 = 20000;}
-  if (speedControlOutput2 < -20000) {speedControlOutput2 = -20000;}
   motor.WriteSpe(2, speedControlOutput2, acc);
-
-  if (speedControlOutput3 > 20000)  {speedControlOutput3 = 20000;}
-  if (speedControlOutput3 < -20000) {speedControlOutput3 = -20000;}
   motor.WriteSpe(3, speedControlOutput3, acc);
-
-  if (speedControlOutput4 > 20000)  {speedControlOutput4 = 20000;}
-  if (speedControlOutput4 < -20000) {speedControlOutput4 = -20000;}
   motor.WriteSpe(4, speedControlOutput4, acc);
 
   if (loopStartTime - loopEndTime > interval) { 
