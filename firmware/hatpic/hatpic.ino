@@ -82,17 +82,16 @@ const float Ki = 21.0; // Integral gain
 const float Ke = 0.60; // Elastic coefficient
 
 // Control loop variables
-float torqueSetpoint1 = 0.0; // Set your desired torque value..
-float torqueSetpoint2 = 0.0; // Set your desired torque value..
-float torqueSetpoint3 = 0.0; // Set your desired torque value..
-float torqueSetpoint4 = 0.0; // Set your desired torque value..
+float torqueSetpoint1 = 0.0;
+float torqueSetpoint2 = 0.0;
+float torqueSetpoint3 = 0.0;
+float torqueSetpoint4 = 0.0;
 
 float torqueFeedback1 = 0.0;
 float torqueFeedback2 = 0.0;
 float torqueFeedback3 = 0.0;
 float torqueFeedback4 = 0.0;
 
-float externalForceFeedback = 0.0; // External force
 float integralTerm1 = 0.0;
 float integralTerm2 = 0.0;
 float integralTerm3 = 0.0;
@@ -275,13 +274,13 @@ void trame2data(String trame){
 
   if((aIndex != -1) and (bIndex != -1) and (cIndex != -1) and (dIndex != -1) and (oIndex != -1)) {
     data_a = trame.substring(aIndex + 1, bIndex).toInt();
-    tmp_data_a = data_a - (1000 + offset_M1);
+    tmp_data_a = data_a - 1000;
     data_b = trame.substring(bIndex + 1, cIndex).toInt();
-    tmp_data_b = data_b - (1000 + offset_M2);
+    tmp_data_b = data_b - 1000;
     data_c = trame.substring(cIndex + 1, dIndex).toInt();
-    tmp_data_c = data_c - (1000 + offset_M3);
+    tmp_data_c = data_c - 1000;
     data_d = trame.substring(dIndex + 1, oIndex).toInt();
-    tmp_data_d = data_d - (1000 + offset_M4); 
+    tmp_data_d = data_d - 1000;
   }
 }
 
