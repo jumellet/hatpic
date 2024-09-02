@@ -11,6 +11,13 @@
 // - - - IMU Config - - -
 #include "SparkFun_BMI270_Arduino_Library.h"
 #include <Wire.h>
+
+// Create a union to easily convert float to byte
+typedef union{
+  float number;
+  uint8_t bytes[4];
+} FLOATUNION_t;
+
 BMI270 imu;
 uint8_t i2cAddress = BMI2_I2C_SEC_ADDR;         // 0x69
 
@@ -111,6 +118,14 @@ char serial_data;
 String serial_trame;
 unsigned long data_a, data_b, data_c, data_d;
 int tmp_data_a, tmp_data_b, tmp_data_c, tmp_data_d;
+
+// Create the variables to send
+FLOATUNION_t send1;
+FLOATUNION_t send2;
+FLOATUNION_t send3;
+FLOATUNION_t send4;
+FLOATUNION_t send5;
+FLOATUNION_t send6;
 
 void setup() {
   Serial.begin(115200);
@@ -297,22 +312,49 @@ void send_cmd(){
   adjustedPosM3 = constrain(adjustedPosM3, 0, 2000);
   adjustedPosM4 = constrain(adjustedPosM4, 0, 2000);
 
-  Serial.print("ia");
+  send1.number = pos_M1;
+  send2.number = pos_M2;
+  send3.number = pos_M3;
+  send4.number = pos_M4;
+  send5.number = mappedRoll;
+  send6.number = mappedPitch;
 
-  Serial.print(String(pos_M1));
-  Serial.print("b");
-  Serial.print(String(pos_M2));
-  Serial.print("c");
-  Serial.print(String(pos_M3));
-  Serial.print("d");
-  Serial.print(String(pos_M4));
+  // Print float data
+  for (int i=0; i<4; i++){
+    Serial.write(send1.bytes[i]);}
+    //Serial.print(String(send1.bytes[i]));}
+  for (int i=0; i<4; i++){
+    Serial.write(send2.bytes[i]);}
+    //Serial.print(String(send2.bytes[i]));}
+  for (int i=0; i<4; i++){
+    Serial.write(send3.bytes[i]);}
+    //Serial.print(String(send3.bytes[i]));}
+  for (int i=0; i<4; i++){
+    Serial.write(send4.bytes[i]);}
+    //Serial.print(String(send4.bytes[i]));}
+  for (int i=0; i<4; i++){
+    Serial.write(send5.bytes[i]);}
+    //Serial.print(String(send5.bytes[i]));}
+  for (int i=0; i<4; i++){
+    Serial.write(send6.bytes[i]);}
+    //Serial.print(String(send1.bytes[i]));}
+  // Print terminator
+  Serial.print('\n');
 
-  Serial.print("p");  // attention reverse angle
-  Serial.print(String(mappedRoll));
-  Serial.print("r");
-  Serial.print(String(mappedPitch));
-  
-  Serial.println("o");
+  // Former dataframe (called trame)
+  //Serial.print("ia");
+  //Serial.print(String(pos_M1));
+  //Serial.print("b");
+  //Serial.print(String(pos_M2));
+  //Serial.print("c");
+  //Serial.print(String(pos_M3));
+  //Serial.print("d");
+  //Serial.print(String(pos_M4));
+  //Serial.print("p");  // attention reverse angle
+  //Serial.print(String(mappedRoll));
+  //Serial.print("r");
+  //Serial.print(String(mappedPitch));
+  //Serial.println("o");
 }
 
 
@@ -469,4 +511,3 @@ float invSqrt(float x) {
   y = y * (1.5f - (halfx * y * y));
   return y;
 }
-
