@@ -57,7 +57,7 @@ float GyroErrorZ = 0.0;
 int mappedPitch, mappedRoll;
 
 // - - - Core config - - -
-TaskHandle_t Task1;                             // Task working on core 1 - wifi
+TaskHandle_t Task1;                  // Task working on core 1 - wifi
 
 // - - - Smart Servo Config
 #include <SCServo.h> 
@@ -71,15 +71,15 @@ int pos_M3 = 1000;
 int pos_M4 = 1000;
 
 int offset_M1 = 20;
-int offset_M2 = -90;
+int offset_M2 = -110;
 int offset_M3 = 20;
-int offset_M4 = 80;
+int offset_M4 = 100;
 int tmp;
 
 // Torque control parameters
 const float Kp = -1500.0; // Proportional gain
 const float Ki = 21.0; // Integral gain
-const float Ke = 0.60; // Elastic coefficient
+const float Ke = 0.7; // Elastic coefficient
 
 // Control loop variables
 float torqueSetpoint1 = 0.0;
@@ -100,12 +100,12 @@ float integralTerm4 = 0.0;
 float integralLimit = 2000.0;  // Adjust as needed
 
 // Base motor speed (adjust as needed)
-int acc = 200;
+int acc = 150;
 int baseSpeed = 100; // Set your base speed value
-int interval = 1;
+int interval = 10;
 
-unsigned long loopEndTime = millis();
-unsigned long loopStartTime = millis();
+unsigned long loopEndTime = micros();
+unsigned long loopStartTime = micros();
 
 char serial_data;
 String serial_trame;
@@ -176,7 +176,7 @@ void loop() {
     else{Serial.flush();}
   }
   // Record the start time of the control loop in milli
-  loopStartTime = millis();
+  loopStartTime = micros();
 
   // Read torque feedback from the sensor
   torqueFeedback1 = motor.ReadLoad(1);
@@ -213,6 +213,10 @@ void loop() {
   torqueSetpoint2 = dynamicKe2 * (motor.ReadPos(2) - (1000 + offset_M2));
   torqueSetpoint3 = dynamicKe3 * (motor.ReadPos(3) - (1000 + offset_M3));
   torqueSetpoint4 = dynamicKe4 * (motor.ReadPos(4) - (1000 + offset_M4));
+  //torqueSetpoint1 = Ke * (motor.ReadPos(1) - (1000 + offset_M1));
+  //torqueSetpoint2 = Ke * (motor.ReadPos(2) - (1000 + offset_M2));
+  //torqueSetpoint3 = Ke * (motor.ReadPos(3) - (1000 + offset_M3));
+  //torqueSetpoint4 = Ke * (motor.ReadPos(4) - (1000 + offset_M4));
 
   // Adjust torque setpoint based on force sensor feedback
   torqueSetpoint1 += tmp_data_a;
@@ -242,7 +246,7 @@ void loop() {
   motor.WriteSpe(4, speedControlOutput4, acc);
 
   if (loopStartTime - loopEndTime > interval) { 
-    loopEndTime = millis();
+    loopEndTime = micros();
     // Flush -1 when cannot read motor position
     tmp = motor.ReadPos(1);
     if (tmp != -1) {
@@ -299,13 +303,13 @@ void send_cmd(){
 
   Serial.print("ia");
 
-  Serial.print(String(pos_M1));
+  Serial.print(String(adjustedPosM1));
   Serial.print("b");
-  Serial.print(String(pos_M2));
+  Serial.print(String(adjustedPosM2));
   Serial.print("c");
-  Serial.print(String(pos_M3));
+  Serial.print(String(adjustedPosM3));
   Serial.print("d");
-  Serial.print(String(pos_M4));
+  Serial.print(String(adjustedPosM4));
 
   Serial.print("p");  // attention reverse angle
   Serial.print(String(mappedRoll));
@@ -322,6 +326,8 @@ void get_imu(void * pvParameters){
     prev_time = current_time;      
     current_time = millis();      
     dt = (current_time - prev_time)/1000.0;
+    //current_time = millis();      
+    //dt = (current_time - prev_time)/1000.0;
     imu.getSensorData();
     AccX = imu.data.accelX;
     AccY = imu.data.accelY;
@@ -330,7 +336,7 @@ void get_imu(void * pvParameters){
     GyroY = imu.data.gyroY;
     GyroZ = imu.data.gyroZ;
     Madgwick6DOF(GyroX, GyroY, GyroZ, AccX, AccY, AccZ, dt);
-    vTaskDelay(20);
+    vTaskDelay(15);
   }
 }
 
@@ -339,8 +345,8 @@ float calculateKe(int position) {
   int centerPosition = 1000;
 
   // Define the range around the center position where the notch effect is felt
-  int notchRange = 30;  // Total width of the notch effect (symmetrically around center)
-  int deadZoneRange = 30;  // Dead zone range around the center where no torque is applied
+  int notchRange = 50;  // Total width of the notch effect (symmetrically around center)
+  int deadZoneRange = 50;  // Dead zone range around the center where no torque is applied
 
   // Define minimum and maximum values for Ke
   float minKe = 0.3;  // Minimum elastic coefficient (when far from center)
