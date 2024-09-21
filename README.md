@@ -1,4 +1,6 @@
-# Hatpic joystick
+# HATPIC: An Open-Source Single Axis Haptic Joystick for Robotic Development
+
+The only thing that is difficult with this device, is to pronounce its name.
 
 ![alt text](https://github.com/jumellet/hatpic/blob/dev/assets/images/hatpic-device.jpg)
 
